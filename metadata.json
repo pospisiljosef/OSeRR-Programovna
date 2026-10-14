@@ -1,0 +1,8 @@
+{
+  "name": "Skautská Programovna",
+  "description": "Sdílení a vyhledávání ověřených skautských výchovných programů, celoročních činností a plánů pro oddíly a družiny.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

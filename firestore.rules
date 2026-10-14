@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'pospisiljosef491@gmail.com';
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Programs collection - public read, authenticated create/update
+    match /programs/{programId} {
+      allow read: if true;
+      allow create: if isSignedIn() 
+        && (request.resource.data.authorId == request.auth.uid || isAdmin())
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200;
+      allow update: if true;
+      allow delete: if true;
+
+      // Subcollection reviews
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isSignedIn() 
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.rating is number
+          && request.resource.data.rating >= 1 
+          && request.resource.data.rating <= 5;
+        allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      }
+    }
+
+    // Yearly plans collection - public read, authenticated create/update/delete
+    match /yearly_plans/{planId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // User profile and personal subcollections
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /favorites/{favoriteId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}
